@@ -78,7 +78,7 @@ const facultySchema = new mongoose.Schema(
     education: { type: [educationSchema], default: [] },
     employmentHistory: { type: [employmentHistorySchema], default: [] },
   },
-  { timestamps: true },
+  { timestamps: true, optimisticConcurrency: true },
 );
 
 facultySchema.index(

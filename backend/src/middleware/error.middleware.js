@@ -7,6 +7,10 @@ export function errorHandler(err, req, res, next) {
     return next(err);
   }
 
+  if (err.type === 'entity.parse.failed') {
+    return res.status(400).json({ message: 'Invalid JSON body' });
+  }
+
   const status = Number.isInteger(err.status) && err.status >= 400 && err.status < 600
     ? err.status
     : 500;
