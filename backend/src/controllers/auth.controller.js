@@ -40,7 +40,7 @@ export async function registerUser(req, res, next) {
 export async function loginUser(req, res, next) {
   try {
     const { email, password } = matchedData(req, { locations: ['body'] });
-    const user = await User.findOne({ email }).select('+passwordHash');
+    const user = await User.findOne({ email }).select('+passwordHash +tokenVersion');
     const passwordMatches = await bcrypt.compare(
       password,
       user ? user.passwordHash : DUMMY_PASSWORD_HASH,
@@ -50,7 +50,7 @@ export async function loginUser(req, res, next) {
       return res.status(401).json({ message: 'Invalid email or password' });
     }
 
-    const accessToken = createAccessToken(user._id);
+    const accessToken = createAccessToken(user._id, user.tokenVersion || 0);
 
     res.set('Cache-Control', 'no-store');
     return res.status(200).json({

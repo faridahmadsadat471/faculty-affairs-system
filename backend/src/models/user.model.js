@@ -43,12 +43,20 @@ const userSchema = new mongoose.Schema(
       required: true,
       default: true,
     },
+    tokenVersion: { type: Number, default: 0, min: 0, select: false },
+    passwordResetHash: { type: String, select: false },
+    passwordResetExpiresAt: { type: Date, select: false },
+    passwordResetVersion: { type: Number, select: false },
   },
   {
     timestamps: true,
     toJSON: {
       transform(document, result) {
         delete result.passwordHash;
+        delete result.tokenVersion;
+        delete result.passwordResetHash;
+        delete result.passwordResetExpiresAt;
+        delete result.passwordResetVersion;
         return result;
       },
     },

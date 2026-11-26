@@ -1,4 +1,6 @@
 import mongoose from 'mongoose';
+import { addRecordFields } from './record-fields.js';
+import { addDocumentFields } from './document-fields.js';
 
 const decisionStatuses = ['approved', 'rejected'];
 
@@ -6,6 +8,7 @@ const contractDocumentSchema = new mongoose.Schema({
   title: { type: String, required: true, trim: true, maxlength: 200 },
   storageKey: { type: String, required: true, trim: true, maxlength: 255 },
 });
+addDocumentFields(contractDocumentSchema);
 
 const contractSchema = new mongoose.Schema(
   {
@@ -103,6 +106,8 @@ const contractSchema = new mongoose.Schema(
 
 contractSchema.index({ faculty: 1, startDate: -1 });
 contractSchema.index({ approvalStatus: 1, endDate: 1 });
+contractSchema.index({ renewedFrom: 1 }, { unique: true, partialFilterExpression: { renewedFrom: { $type: 'objectId' } } });
+addRecordFields(contractSchema);
 
 const Contract = mongoose.model('Contract', contractSchema);
 

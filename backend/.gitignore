@@ -6,3 +6,6 @@ uploads/*
 !uploads/.gitkeep
 coverage/
 *.log
+backups/
+restored-uploads/
+.backup-key*

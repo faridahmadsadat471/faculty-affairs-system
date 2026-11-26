@@ -1,0 +1,5 @@
+# Keep local verification assets, agent instructions, and documents off GitHub.
+postman/
+test-support/
+deliverables/
+[Aa][Gg][Ee][Nn][Tt][Ss].[Mm][Dd]

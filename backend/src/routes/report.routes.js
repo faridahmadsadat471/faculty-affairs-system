@@ -1,0 +1,10 @@
+import { Router } from 'express';
+import { requireAuth } from '../middleware/auth.middleware.js';
+import { reportQuery } from '../validators/report.validator.js';
+import { summaryReport, facultyCsv, expiringContracts } from '../controllers/report.controller.js';
+const router = Router();
+router.use(requireAuth);
+router.get('/summary', reportQuery, summaryReport);
+router.get('/faculty.csv', reportQuery, facultyCsv);
+router.get('/contracts/expiring', reportQuery, expiringContracts);
+export default router;

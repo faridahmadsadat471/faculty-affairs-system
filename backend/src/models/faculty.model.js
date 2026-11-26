@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import { profileDocumentSchema } from './document-fields.js';
 
 const educationSchema = new mongoose.Schema({
   degree: { type: String, required: true, trim: true, maxlength: 100 },
@@ -77,6 +78,8 @@ const facultySchema = new mongoose.Schema(
     },
     education: { type: [educationSchema], default: [] },
     employmentHistory: { type: [employmentHistorySchema], default: [] },
+    deletedAt: { type: Date, default: null },
+    documents: { type: [profileDocumentSchema], default: [] },
   },
   { timestamps: true, optimisticConcurrency: true },
 );

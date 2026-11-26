@@ -8,6 +8,10 @@ export const getFacultyValidation = [
 
 export const listFacultyValidation = checkExact(
   [
+    query('search').optional().isString().bail().trim().isLength({ min: 1, max: 100 }).withMessage('Search must contain 1 to 100 characters'),
+    query('department').optional().isString().bail().trim().isLength({ min: 1, max: 150 }).withMessage('Enter a valid department'),
+    query('academicRank').optional().isString().bail().isIn(Faculty.schema.path('academicRank').enumValues).withMessage('Choose a supported academic rank'),
+    query('employmentStatus').optional().isString().bail().isIn(Faculty.schema.path('employmentStatus').enumValues).withMessage('Choose a supported employment status'),
     query('page')
       .optional()
       .isString().withMessage('Page must be a single number').bail()
@@ -19,7 +23,7 @@ export const listFacultyValidation = checkExact(
       .isInt({ min: 1, max: 100 }).withMessage('Limit must be an integer from 1 to 100')
       .toInt(),
   ],
-  { locations: ['query'], message: 'Only page and limit query parameters are allowed' },
+  { locations: ['query'], message: 'Only supported search, filter, and pagination parameters are allowed' },
 );
 
 function textField(name, min, max) {

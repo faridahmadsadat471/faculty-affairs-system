@@ -7,7 +7,12 @@
   "scripts": {
     "dev": "nodemon src/server.js",
     "start": "node src/server.js",
-    "test": "node --test"
+    "test": "node --test",
+    "postman:server": "node scripts/postman-server.js",
+    "postman:build": "node scripts/build-postman.js",
+    "backup:init-key": "node scripts/backup.js init-key",
+    "backup": "node scripts/backup.js create",
+    "restore": "node scripts/backup.js restore"
   },
   "keywords": [],
   "author": "",

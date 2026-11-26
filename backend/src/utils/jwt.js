@@ -19,8 +19,8 @@ export function getJwtSecret() {
   return secret;
 }
 
-export function createAccessToken(userId) {
-  return jwt.sign({}, getJwtSecret(), {
+export function createAccessToken(userId, tokenVersion = 0) {
+  return jwt.sign({ v: tokenVersion }, getJwtSecret(), {
     algorithm: 'HS256',
     subject: String(userId),
     expiresIn: ACCESS_TOKEN_EXPIRES_IN,
@@ -52,6 +52,7 @@ export function verifyAccessToken(token) {
     || payload.exp <= payload.iat
     || payload.exp - payload.iat > ACCESS_TOKEN_EXPIRES_IN
     || payload.iat > Math.floor(Date.now() / 1000)
+    || (payload.v !== undefined && (!Number.isSafeInteger(payload.v) || payload.v < 0))
   ) {
     throw new jwt.JsonWebTokenError('Invalid access token claims');
   }

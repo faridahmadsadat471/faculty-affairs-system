@@ -1,4 +1,6 @@
 import mongoose from 'mongoose';
+import { addRecordFields } from './record-fields.js';
+import { addDocumentFields } from './document-fields.js';
 
 const coAuthorSchema = new mongoose.Schema({
   fullName: { type: String, required: true, trim: true, maxlength: 100 },
@@ -9,6 +11,7 @@ const researchDocumentSchema = new mongoose.Schema({
   title: { type: String, required: true, trim: true, maxlength: 200 },
   storageKey: { type: String, required: true, trim: true, maxlength: 255 },
 });
+addDocumentFields(researchDocumentSchema);
 
 const researchSchema = new mongoose.Schema(
   {
@@ -82,6 +85,7 @@ const researchSchema = new mongoose.Schema(
 );
 
 researchSchema.index({ faculty: 1, publicationDate: -1 });
+addRecordFields(researchSchema);
 
 const Research = mongoose.model('Research', researchSchema);
 

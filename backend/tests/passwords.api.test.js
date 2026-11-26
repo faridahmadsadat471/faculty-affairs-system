@@ -1,0 +1,48 @@
+import { before, after, test } from 'node:test';
+import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
+import { startApi, fixturePassword } from '../test-support/api.js';
+import User from '../src/models/user.model.js';
+let api, admin;
+before(async () => { api = await startApi('passwords'); admin = await api.account('system_admin'); });
+after(async () => { await api?.close(); });
+const post = (path, body, token) => api.request(path, { method: 'POST', body, token });
+const login = (email, password) => post('/api/auth/login', { email, password });
+test('password changes verify current credentials, end all sessions and preserve password characters', async () => {
+  const member = await api.account('faculty_member'); const second = await login(member.user.email, fixturePassword);
+  const path = '/api/auth/change-password', password = '  ChangedPassword123!  ';
+  assert.equal((await post(path, { currentPassword: 'WrongPassword123!', newPassword: password }, member.token)).status, 401);
+  assert.equal((await post(path, { currentPassword: fixturePassword, newPassword: fixturePassword }, member.token)).status, 400);
+  assert.equal((await post(path, { currentPassword: fixturePassword, newPassword: password }, member.token)).status, 200);
+  for (const token of [member.token, second.body.accessToken]) assert.equal((await api.request('/api/auth/me', { token })).status, 401);
+  assert.equal((await login(member.user.email, fixturePassword)).status, 401);
+  assert.equal((await login(member.user.email, password)).status, 200);
+  assert.equal((await login(member.user.email, password.trim())).status, 401);
+});
+test('only an administrator issues expiring one-use recovery tokens, with only hashes persisted', async () => {
+  const member = await api.account('faculty_member'), issue = '/api/users/' + member.user._id + '/password-reset';
+  assert.equal((await post(issue, {}, member.token)).status, 403);
+  const result = await post(issue, {}, admin.token); assert.equal(result.status, 200);
+  assert.equal(result.headers.get('cache-control'), 'no-store'); assert.match(result.body.resetToken, /^[a-f\d]{64}$/);
+  const stored = await User.findById(member.user._id).select('+passwordResetHash +passwordResetExpiresAt');
+  assert.equal(stored.passwordResetHash, createHash('sha256').update(result.body.resetToken).digest('hex')); assert.notEqual(stored.passwordResetHash, result.body.resetToken);
+  const reset = { token: result.body.resetToken, newPassword: 'RecoveryPassword123!' };
+  const responses = await Promise.all([post('/api/auth/reset-password', reset), post('/api/auth/reset-password', reset)]);
+  assert.deepEqual(responses.map((r) => r.status).sort(), [200, 400]);
+  assert.equal((await api.request('/api/auth/me', { token: member.token })).status, 401);
+  assert.equal((await post('/api/auth/reset-password', reset)).status, 400);
+  assert.equal((await login(member.user.email, reset.newPassword)).status, 200);
+});
+test('expired, replaced, disabled-account tokens and invalid passwords are rejected', async () => {
+  const member = await api.account('faculty_member'), issue = '/api/users/' + member.user._id + '/password-reset';
+  const first = await post(issue, {}, admin.token), second = await post(issue, {}, admin.token);
+  const reset = (token) => post('/api/auth/reset-password', { token, newPassword: 'RecoveryPassword123!' });
+  assert.equal((await reset(first.body.resetToken)).status, 400);
+  await User.updateOne({ _id: member.user._id }, { $set: { passwordResetExpiresAt: new Date(0) } });
+  assert.equal((await reset(second.body.resetToken)).status, 400);
+  const third = await post(issue, {}, admin.token);
+  await User.updateOne({ _id: member.user._id }, { $set: { isActive: false } });
+  assert.equal((await reset(third.body.resetToken)).status, 400);
+  assert.equal((await post(issue, {}, admin.token)).status, 409);
+  for (const password of ['short', 'a'.repeat(73), '😀'.repeat(20), {}]) assert.equal((await post('/api/auth/reset-password', { token: 'a'.repeat(64), newPassword: password })).status, 400);
+});

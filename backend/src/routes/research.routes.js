@@ -1,0 +1,16 @@
+import { Router } from 'express';
+import { auditMutations } from '../middleware/audit.middleware.js';
+import { requireAuth } from '../middleware/auth.middleware.js';
+import { validateRecordQuery } from '../validators/record.validator.js';
+import { createResearchValidation, updateResearchValidation, researchWorkflowValidation } from '../validators/research.validator.js';
+import { research, researchWorkflow } from '../controllers/research.controller.js';
+const router = Router();
+router.use(requireAuth);
+router.use(auditMutations('research'));
+router.get('/', validateRecordQuery, research.list);
+router.post('/', validateRecordQuery, createResearchValidation, research.create);
+router.get('/:id', validateRecordQuery, research.get);
+router.patch('/:id', validateRecordQuery, updateResearchValidation, research.update);
+router.patch('/:id/status', validateRecordQuery, researchWorkflowValidation, researchWorkflow);
+router.delete('/:id', validateRecordQuery, research.archive);
+export default router;

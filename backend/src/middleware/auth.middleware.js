@@ -27,9 +27,9 @@ export async function requireAuth(req, res, next) {
     }
 
     const user = await User.findById(payload.sub)
-      .select('_id fullName email role isActive createdAt');
+      .select('_id fullName email role isActive createdAt +tokenVersion');
 
-    if (!user || !user.isActive) {
+    if (!user || !user.isActive || (payload.v || 0) !== (user.tokenVersion || 0)) {
       return unauthorized(res);
     }
 

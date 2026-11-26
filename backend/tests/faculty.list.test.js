@@ -177,7 +177,7 @@ test('invalid or repeated pagination parameters return 400', async () => {
 });
 
 test('query scope overrides and unknown parameters cannot bypass department access', async () => {
-  for (const query of ['?department=Mathematics', '?user=other', '?role=system_admin', '?search=person', '?page[$gt]=0']) {
+  for (const query of ['?unknown=Mathematics', '?user=other', '?role=system_admin', '?unknown=person', '?page[$gt]=0']) {
     const response = await list(accounts.csManager, query);
     assert.equal(response.status, 400, query);
     assert.equal(response.body.message, 'Validation failed');

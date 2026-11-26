@@ -1,4 +1,6 @@
 import mongoose from 'mongoose';
+import { addRecordFields } from './record-fields.js';
+import { addDocumentFields } from './document-fields.js';
 
 const academicRanks = ['lecturer', 'senior_lecturer', 'associate_professor', 'professor'];
 const decisionStatuses = ['approved', 'rejected'];
@@ -7,6 +9,7 @@ const supportingDocumentSchema = new mongoose.Schema({
   title: { type: String, required: true, trim: true, maxlength: 200 },
   storageKey: { type: String, required: true, trim: true, maxlength: 255 },
 });
+addDocumentFields(supportingDocumentSchema);
 
 const promotionSchema = new mongoose.Schema(
   {
@@ -93,6 +96,7 @@ const promotionSchema = new mongoose.Schema(
 );
 
 promotionSchema.index({ faculty: 1, createdAt: -1 });
+addRecordFields(promotionSchema);
 
 const Promotion = mongoose.model('Promotion', promotionSchema);
 

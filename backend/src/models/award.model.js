@@ -1,9 +1,12 @@
 import mongoose from 'mongoose';
+import { addRecordFields } from './record-fields.js';
+import { addDocumentFields } from './document-fields.js';
 
 const awardDocumentSchema = new mongoose.Schema({
   title: { type: String, required: true, trim: true, maxlength: 200 },
   storageKey: { type: String, required: true, trim: true, maxlength: 255 },
 });
+addDocumentFields(awardDocumentSchema);
 
 const awardSchema = new mongoose.Schema(
   {
@@ -48,6 +51,7 @@ const awardSchema = new mongoose.Schema(
 );
 
 awardSchema.index({ faculty: 1, dateReceived: -1 });
+addRecordFields(awardSchema);
 
 const Award = mongoose.model('Award', awardSchema);
 

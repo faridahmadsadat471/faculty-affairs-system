@@ -1,0 +1,15 @@
+import { Router } from 'express';
+import { auditMutations } from '../middleware/audit.middleware.js';
+import { requireAuth } from '../middleware/auth.middleware.js';
+import { validateRecordQuery } from '../validators/record.validator.js';
+import { createAwardValidation, updateAwardValidation } from '../validators/award.validator.js';
+import { awards } from '../controllers/award.controller.js';
+const router = Router();
+router.use(requireAuth);
+router.use(auditMutations('awards'));
+router.get('/', validateRecordQuery, awards.list);
+router.post('/', validateRecordQuery, createAwardValidation, awards.create);
+router.get('/:id', validateRecordQuery, awards.get);
+router.patch('/:id', validateRecordQuery, updateAwardValidation, awards.update);
+router.delete('/:id', validateRecordQuery, awards.archive);
+export default router;

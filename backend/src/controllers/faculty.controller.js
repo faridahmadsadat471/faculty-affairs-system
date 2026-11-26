@@ -2,13 +2,24 @@ import { matchedData } from 'express-validator';
 import Faculty from '../models/faculty.model.js';
 import User from '../models/user.model.js';
 import { getFacultyReadFilter } from '../services/faculty-access.service.js';
+import { escapeRegex } from '../utils/query.js';
+import { trackChanges } from '../middleware/audit.middleware.js';
 
-const facultyReadFields = '_id employeeId user fullName department academicRank email phone employmentStatus education employmentHistory createdAt updatedAt';
+const facultyReadFields = '_id employeeId user fullName department academicRank email phone employmentStatus education employmentHistory documents createdAt updatedAt';
 
 export async function listFaculty(req, res, next) {
   try {
-    const { page = 1, limit = 20 } = matchedData(req, { locations: ['query'] });
-    const filter = await getFacultyReadFilter(req.user);
+    const { page = 1, limit = 20, search, department, academicRank, employmentStatus } = matchedData(req, { locations: ['query'] });
+    const scope = await getFacultyReadFilter(req.user);
+    const criteria = {};
+    if (search) {
+      const expression = new RegExp(escapeRegex(search), 'i');
+      criteria.$or = ['fullName', 'employeeId', 'email'].map((field) => ({ [field]: expression }));
+    }
+    if (department) criteria.department = department;
+    if (academicRank) criteria.academicRank = academicRank;
+    if (employmentStatus) criteria.employmentStatus = employmentStatus;
+    const filter = { $and: [scope, criteria] };
     const [faculty, total] = await Promise.all([
       Faculty.find(filter)
         .select(facultyReadFields)
@@ -65,7 +76,7 @@ export async function updateFaculty(req, res, next) {
   try {
     const { id } = matchedData(req, { locations: ['params'] });
     const data = matchedData(req, { locations: ['body'] });
-    const faculty = await Faculty.findById(id).select(`${facultyReadFields} __v`);
+    const faculty = await Faculty.findById(id).where({ deletedAt: null }).select(`${facultyReadFields} __v`);
 
     if (!faculty) {
       return res.status(404).json({ message: 'Faculty not found' });
@@ -75,6 +86,7 @@ export async function updateFaculty(req, res, next) {
       return res.status(404).json({ message: 'Linked user not found' });
     }
 
+    trackChanges(req, faculty.toObject(), { ...faculty.toObject(), ...data }, ['user', 'department', 'academicRank', 'employmentStatus']);
     faculty.set(data);
     await faculty.save();
 
@@ -116,4 +128,19 @@ function handleFacultyWriteError(error, res, next) {
   }
 
   next(error);
+}
+
+export async function deleteFaculty(req, res, next) {
+  try {
+    const { id } = matchedData(req, { locations: ['params'] });
+    const faculty = await Faculty.findOneAndUpdate(
+      { _id: id, deletedAt: null },
+      { $set: { deletedAt: new Date() }, $inc: { __v: 1 } },
+      { returnDocument: 'after' },
+    ).select('_id').lean();
+    if (!faculty) return res.status(404).json({ message: 'Faculty not found' });
+    return res.status(200).json({ message: 'Faculty archived successfully', id: faculty._id });
+  } catch (error) {
+    next(error);
+  }
 }

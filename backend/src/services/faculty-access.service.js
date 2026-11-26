@@ -14,17 +14,17 @@ export async function getFacultyReadFilter(user) {
   switch (user.role) {
     case 'system_admin':
     case 'directorate_staff':
-      return {};
+      return { deletedAt: null };
     case 'faculty_member':
-      return { user: user._id };
+      return { user: user._id, deletedAt: null };
     case 'department_manager': {
-      const profile = await Faculty.findOne({ user: user._id }).select('department').lean();
+      const profile = await Faculty.findOne({ user: user._id, deletedAt: null }).select('department').lean();
 
       if (typeof profile?.department !== 'string' || !profile.department.trim()) {
         throw forbidden('Department access is not configured');
       }
 
-      return { department: profile.department };
+      return { department: profile.department, deletedAt: null };
     }
     default:
       throw forbidden();
