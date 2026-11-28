@@ -68,6 +68,7 @@ function facultyFieldValidation(partial = false) {
       .trim().toLowerCase()
       .custom((value) => value.length <= 254)
       .withMessage('Email must not exceed 254 characters').bail()
+      .if((value) => value !== '')
       .isEmail().withMessage('Enter a valid email address'),
     textField('phone', 0, 30).optional(),
     body('employmentStatus')

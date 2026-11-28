@@ -101,11 +101,19 @@ PATCH /api/promotions/:id/status
 ```
 
 ```json
-{ "status": "under_review", "eligibilityStatus": "eligible", "eligibilityNotes": "Documents and institutional criteria verified" }
+{
+  "status": "under_review",
+  "eligibilityStatus": "eligible",
+  "eligibilityNotes": "Documents and institutional criteria verified"
+}
 ```
 
 ```json
-{ "status": "approved", "reviewNotes": "Approved after review", "effectiveDate": "2027-01-01" }
+{
+  "status": "approved",
+  "reviewNotes": "Approved after review",
+  "effectiveDate": "2027-01-01"
+}
 ```
 
 د رد لپاره وروستی status `rejected` او دلیل په `reviewNotes` کې وي. Faculty او manager خپل حدودو کې مسوده/سپارل کوي؛ ارزونه او پرېکړه admin/staff کوي. څوک خپله faculty ترفیع نه شي ارزولی. تایید شوې ترفیع باید `eligible` وي او effectiveDate ولري. صلاحیت د انسان له خوا د پوهنتون د قواعدو مطابق ارزول کېږي؛ سیستم نامعلوم قانون نه اټکلوي.
@@ -204,7 +212,8 @@ Content-Type په لاس مه ټاکئ؛ Postman دې boundary جوړ کړي. پ
 
 ## ۱۲. امنیت او عام errors
 
-- JWT: موجود ۱۵ دقیقې موده، signature/issuer/audience چک، او له logout وروسته سمدستي revoke.
+- JWT: نوې ناسته د وخت له امله نه ختمېږي؛ د login ځواب `expiresIn: null` لري. signature/issuer/audience، د حساب اوسنی حالت او tokenVersion لا هم چک کېږي. Logout سمدستي token لغوه کوي؛ د دې ناستې د لغوه کولو hash په database کې بې له پای نېټې ساتل کېږي، څو بیا فعال نه شي. د پاسورډ، role یا isActive بدلون هم پخوانۍ ناستې بندوي.
+- د Frontend اتومات وتلو timer لرې شوی؛ د فورم ډکولو پر مهال یوازې د وخت تېرېدل فورم نه بندوي. پخوانی ۱۵ دقیقې token خپله پخوانۍ موده لري؛ له دې بدلون وروسته یو ځل Logout او بیا Login وکړئ. دا بدلون draft نه ساتي؛ Refresh، د پاڼې پرېښودل یا د tab بندول ناثبت شوي معلومات ضایع کولی شي. په شریک کمپیوټر کې له کار وروسته Logout وکړئ.
 - هر request د database اوسنی role/isActive اخلي؛ د Body role باور نه کېږي.
 - Login/register: په یوه IP تر ۱۰۰ غوښتنو/۱۵ دقیقو؛ upload تر ۳۰/۱۵ دقیقو. له حد وروسته `429` او `Retry-After` راځي. دا limiter د یوه local Node process لپاره دی؛ د څو process/server لپاره shared store غواړي.
 - CORS: یوازې configured frontend origin؛ Postman چې Origin نه لېږي کار کوي. CORS د authentication بدیل نه دی.
@@ -231,7 +240,13 @@ POST /api/users/:id/password-reset
 د نوي حساب نمونه:
 
 ```json
-{"fullName":"New Staff","email":"staff@example.org","password":"ChooseYourOwnStrongPassword!","role":"directorate_staff","isActive":true}
+{
+  "fullName": "New Staff",
+  "email": "staff@example.org",
+  "password": "ChooseYourOwnStrongPassword!",
+  "role": "directorate_staff",
+  "isActive": true
+}
 ```
 
 PATCH یوازې fullName، email، role او د JSON boolean په ډول isActive مني. د رول یا email بدلون، بندول او بېرته فعالول پخواني JWTs بندوي؛ کاروونکی بیا login کوي. وروستی فعال Admin نه شي بندېدای یا عادي رول ته ښکته کېدای. د هممهاله admin بدلونونو ساتنه د همدې یوه Node process په دننه کې ده؛ د څو process/server لپاره distributed lock یا د MongoDB transaction ډیزاین پکار دی. اوسنی local server یو process دی.
@@ -243,7 +258,10 @@ PATCH یوازې fullName، email، role او د JSON boolean په ډول isActi
 Login شوی کاروونکی `POST /api/auth/change-password` ته دا body ورکوي:
 
 ```json
-{"currentPassword":"YourCurrentPassword","newPassword":"YourNewStrongPassword!"}
+{
+  "currentPassword": "YourCurrentPassword",
+  "newPassword": "YourNewStrongPassword!"
+}
 ```
 
 نوی پاسورډ لږ تر لږه ۱۲ توري او تر ۷۲ UTF-8 bytes پورې وي. پاسورډ trim نه کېږي. د بریالي بدلون وروسته ټولې ناستې بندېږي؛ له نوي پاسورډ سره بیا login وکړئ.

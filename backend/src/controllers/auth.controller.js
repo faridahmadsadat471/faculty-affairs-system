@@ -2,7 +2,7 @@ import bcrypt from 'bcryptjs';
 import { matchedData } from 'express-validator';
 import User from '../models/user.model.js';
 import RevokedToken from '../models/revoked-token.model.js';
-import { ACCESS_TOKEN_EXPIRES_IN, createAccessToken } from '../utils/jwt.js';
+import { createAccessToken } from '../utils/jwt.js';
 import { toPublicUser } from '../utils/user.js';
 
 // This hash belongs to no account; it keeps missing-account password checks similar in cost.
@@ -57,7 +57,7 @@ export async function loginUser(req, res, next) {
       message: 'Login successful',
       accessToken,
       tokenType: 'Bearer',
-      expiresIn: ACCESS_TOKEN_EXPIRES_IN,
+      expiresIn: null,
       user: toPublicUser(user),
     });
   } catch (error) {

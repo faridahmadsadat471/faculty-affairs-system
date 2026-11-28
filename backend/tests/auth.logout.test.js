@@ -106,13 +106,14 @@ test('logout succeeds and immediately denies protected requests with the same to
   assert.equal((await logout(token)).status, 401);
 });
 
-test('revocation stores only a token digest and the original JWT expiration', async () => {
+test('persistent-session revocation stores only a digest and has no TTL deletion date', async () => {
   const token = await login();
   assert.equal((await logout(token)).status, 200);
   const saved = await RevokedToken.findOne({ tokenHash: tokenDigest(token) }).lean();
   assert.ok(saved);
   assert.equal(saved.tokenHash, tokenDigest(token));
-  assert.equal(saved.expiresAt.getTime(), jwt.decode(token).exp * 1000);
+  assert.equal(saved.expiresAt, null);
+  assert.equal(jwt.decode(token).exp, undefined);
   assert.ok(!JSON.stringify(saved).includes(token));
   assert.ok(!Object.hasOwn(saved, 'token'));
   assert.ok(!Object.hasOwn(saved, 'accessToken'));
@@ -208,8 +209,23 @@ test('revocation lookup failures do not grant access', async (context) => {
   assert.deepEqual(response.body, { message: 'Internal server error' });
 });
 
-test('the revocation model rejects invalid digests and missing expiration dates', async () => {
+test('the revocation model rejects invalid digests but permits permanent revocations', async () => {
   await assert.rejects(new RevokedToken({ tokenHash: 'not-a-digest' }).validate(), (error) => {
-    return Boolean(error.errors.tokenHash && error.errors.expiresAt);
+    return Boolean(error.errors.tokenHash);
   });
+  const permanent = new RevokedToken({ tokenHash: 'a'.repeat(64) });
+  await permanent.validate();
+  assert.equal(permanent.expiresAt, null);
+  await assert.rejects(new RevokedToken({ tokenHash: 'b'.repeat(64), expiresAt: 'invalid-date' }).validate());
+});
+
+test('legacy expiring-token revocations keep their original TTL date', async () => {
+  const token = jwt.sign({}, process.env.JWT_SECRET, {
+    algorithm: 'HS256', subject: userId, expiresIn: 900,
+    issuer: 'faculty-affairs-api', audience: 'faculty-affairs-client',
+  });
+  assert.equal((await logout(token)).status, 200);
+  const saved = await RevokedToken.findOne({ tokenHash: tokenDigest(token) }).lean();
+  assert.equal(saved.expiresAt.getTime(), jwt.decode(token).exp * 1000);
+  assert.equal((await request('/api/auth/me', { token })).status, 401);
 });

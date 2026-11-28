@@ -1,0 +1,12 @@
+node_modules/
+dist/
+.env
+.env.*
+!.env.example
+*.local
+*.log
+coverage/
+.vite/
+
+# Retired local prototype; the application now opens ManagementApp after login.
+src/pages/WelcomePage.jsx

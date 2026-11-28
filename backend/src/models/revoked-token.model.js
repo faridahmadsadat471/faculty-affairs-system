@@ -9,7 +9,8 @@ const revokedTokenSchema = new mongoose.Schema({
   },
   expiresAt: {
     type: Date,
-    required: true,
+    // MongoDB TTL ignores null: revocations for sessions without an expiry must remain.
+    default: null,
     expires: 0,
   },
 });

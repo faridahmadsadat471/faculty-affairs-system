@@ -38,6 +38,8 @@ The `postman/` and `test-support/` folders are intentionally kept locally and ex
 
 Account administration, password changes/recovery, central audit logging, and encrypted offline backup/restore are also implemented. The updated collection contains 13 requests.
 
+Session policy: new logins issue signed JWTs without a time expiry (`expiresIn: null`). Logout revokes them persistently; password, role, and activation changes still invalidate existing sessions. Previously issued 15-minute tokens keep their expiry, so sign out and back in once after upgrading. Latest verification: all 193 backend tests passed.
+
 Verification: 185 automated tests passed. The original Postman suite passed 79 assertions; the added account, password, and audit workflow passed 22 assertions in Postman. Backup/restore was tested against isolated MongoDB databases, including BSON types, indexes, PDF bytes, invalid keys, corruption, and occupied targets.
 
 Backup commands: `npm run backup:init-key`, then stop all writers and run `npm run backup -- --offline`. Read the Pashto guide before restoring. University policy decisions and frontend work remain.

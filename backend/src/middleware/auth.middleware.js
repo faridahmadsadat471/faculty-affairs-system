@@ -34,7 +34,7 @@ export async function requireAuth(req, res, next) {
     }
 
     req.user = user;
-    req.auth = { tokenHash, expiresAt: new Date(payload.exp * 1000) };
+    req.auth = { tokenHash, expiresAt: payload.exp === undefined ? null : new Date(payload.exp * 1000) };
     next();
   } catch (error) {
     if (error instanceof jwt.JsonWebTokenError) {

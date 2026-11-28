@@ -1,6 +1,6 @@
 import 'dotenv/config';
 import assert from 'node:assert/strict';
-import { randomBytes } from 'node:crypto';
+import { randomBytes, randomUUID } from 'node:crypto';
 import { after, before, test } from 'node:test';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
@@ -204,6 +204,23 @@ test('missing expiry or issue time, future issue times, and excessive token life
   for (const token of tokens) {
     assert.equal((await getMe(token)).status, 401);
   }
+});
+
+test('a persistent session issued two days ago still authenticates and can be revoked', async () => {
+  const token = mintToken({ session: 'until_logout', v: 0, jti: randomUUID(), iat: Math.floor(Date.now() / 1000) - 2 * 86400 }, { expiresIn: undefined });
+  assert.equal((await getMe(token)).status, 200);
+  const response = await request('/api/auth/logout', { method: 'POST', headers: { Authorization: `Bearer ${token}` } });
+  assert.equal(response.status, 200);
+  assert.equal((await getMe(token)).status, 401);
+});
+
+test('persistent sessions require their signed policy, version, issue time, and unique token ID', async () => {
+  const base = { session: 'until_logout', v: 0, jti: randomUUID() };
+  for (const claims of [{ ...base, v: undefined }, { ...base, jti: undefined }, { ...base, jti: 'bad' }, { ...base, session: 'unknown' }]) {
+    assert.equal((await getMe(mintToken(claims, { expiresIn: undefined }))).status, 401);
+  }
+  assert.equal((await getMe(mintToken(base, { expiresIn: undefined, noTimestamp: true }))).status, 401);
+  assert.equal((await getMe(mintToken(base))).status, 401);
 });
 
 test('deactivating a user denies access with an already-issued token', async () => {

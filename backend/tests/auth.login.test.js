@@ -107,7 +107,7 @@ test('valid credentials return a safe user response and an uncacheable bearer to
   assert.equal(successfulLogin.status, 200);
   assert.equal(successfulLogin.body.message, 'Login successful');
   assert.equal(successfulLogin.body.tokenType, 'Bearer');
-  assert.equal(successfulLogin.body.expiresIn, 900);
+  assert.equal(successfulLogin.body.expiresIn, null);
   assert.equal(successfulLogin.headers.get('cache-control'), 'no-store');
   assert.equal(successfulLogin.body.user.email, credentials.email);
   assert.equal(successfulLogin.body.user.role, 'faculty_member');
@@ -116,10 +116,13 @@ test('valid credentials return a safe user response and an uncacheable bearer to
   assert.ok(!JSON.stringify(successfulLogin.body).includes(credentials.password));
 });
 
-test('JWT signature, subject, issuer, audience, and 15-minute expiry are correct', () => {
+test('JWT signature, subject, issuer, audience, and until-logout session policy are correct', () => {
   const payload = jwt.verify(successfulLogin.body.accessToken, testSecret, verificationOptions);
   assert.equal(payload.sub, successfulLogin.body.user.id);
-  assert.equal(payload.exp - payload.iat, 900);
+  assert.equal(payload.exp, undefined);
+  assert.equal(payload.session, 'until_logout');
+  assert.equal(payload.v, 0);
+  assert.equal(typeof payload.jti, 'string');
   assert.ok(!Object.hasOwn(payload, 'password'));
   assert.ok(!Object.hasOwn(payload, 'passwordHash'));
   assert.ok(!Object.hasOwn(payload, 'email'));
@@ -138,13 +141,13 @@ test('altered JWTs and tokens verified with the wrong secret or algorithm fail v
   assert.throws(() => jwt.verify(token, testSecret, { algorithms: ['HS512'] }), { name: 'JsonWebTokenError' });
 });
 
-test('expired JWTs and mismatched issuer or audience fail verification', () => {
+test('new sessions remain valid past 15 minutes and still reject a mismatched issuer or audience', () => {
   const token = successfulLogin.body.accessToken;
   const payload = jwt.verify(token, testSecret, verificationOptions);
-  assert.throws(() => jwt.verify(token, testSecret, {
+  assert.equal(jwt.verify(token, testSecret, {
     ...verificationOptions,
-    clockTimestamp: payload.exp + 1,
-  }), { name: 'TokenExpiredError' });
+    clockTimestamp: payload.iat + 30 * 86400,
+  }).sub, payload.sub);
   assert.throws(() => jwt.verify(token, testSecret, { ...verificationOptions, issuer: 'wrong-api' }), { name: 'JsonWebTokenError' });
   assert.throws(() => jwt.verify(token, testSecret, { ...verificationOptions, audience: 'wrong-client' }), { name: 'JsonWebTokenError' });
 });
